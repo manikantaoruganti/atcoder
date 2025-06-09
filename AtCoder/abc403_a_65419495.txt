@@ -1,0 +1,42 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int N;
+
+// Rotate grid 90 degrees clockwise
+vector<string> rotate90(const vector<string>& grid) {
+    vector<string> rotated(N, string(N, '.'));
+    for (int i = 0; i < N; ++i)
+        for (int j = 0; j < N; ++j)
+            rotated[j][N - 1 - i] = grid[i][j];
+    return rotated;
+}
+
+// Count the number of differing cells
+int count_diff(const vector<string>& a, const vector<string>& b) {
+    int diff = 0;
+    for (int i = 0; i < N; ++i)
+        for (int j = 0; j < N; ++j)
+            diff += (a[i][j] != b[i][j]);
+    return diff;
+}
+
+int main() {
+    cin >> N;
+    vector<string> S(N), T(N);
+    for (int i = 0; i < N; ++i) cin >> S[i];
+    for (int i = 0; i < N; ++i) cin >> T[i];
+
+    int min_operations = INT_MAX;
+
+    vector<string> rotatedS = S;
+    for (int rot = 0; rot < 4; ++rot) {
+        int changes = count_diff(rotatedS, T);
+        int total_ops = rot + changes; // rot = number of rotations
+        min_operations = min(min_operations, total_ops);
+        rotatedS = rotate90(rotatedS);
+    }
+
+    cout << min_operations << '\n';
+    return 0;
+}
