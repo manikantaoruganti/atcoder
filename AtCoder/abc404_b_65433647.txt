@@ -1,0 +1,490 @@
+
+
+
+
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <queue>
+#include <set>
+#include <map>
+#include <unordered_set>
+#include <unordered_map>
+#include <cmath>
+#include <bitset>
+#include <numeric>
+#include <iomanip>
+#include <functional>
+#include <stack>
+#include <string>
+#include <cstring>
+#include <ctime>
+#include <cassert>
+#include <climits>
+#include <cstdint>
+
+using namespace std;
+
+// ---------- Macros ----------
+#define debug(...) cerr << "[DEBUG] " << __FILE__ << ":" << __LINE__ << " - " << #__VA_ARGS__ << " = "; _debug(__VA_ARGS__);
+
+template<typename T>
+void _debug(T x) { cerr << x << endl; }
+
+template<typename T, typename... Args>
+void _debug(T x, Args... args) { cerr << x << " "; _debug(args...); }
+
+#define FOR(i, a, b) for (int i = (a); i < (b); ++i)
+#define FORR(i, a, b) for (int i = (a); i >= (b); --i)
+#define REP(i, n) FOR(i, 0, n)
+#define REPR(i, n) FORR(i, n - 1, 0)
+
+// ---------- Constants ----------
+const int64_t MOD = 1'000'000'007;
+const int64_t INF = 1'000'000'000;
+const int64_t LINF = 1'000'000'000'000'000'000;
+const double PI = acos(-1);
+const int MAXN = 200'005;
+
+// ---------- Type Definitions ----------
+using I = int32_t;
+using II = int64_t;
+using U = uint32_t;
+using UU = uint64_t;
+using F = float;
+using FF = double;
+using VI = vector<I>;
+using VII = vector<II>;
+using VU = vector<U>;
+using VUU = vector<UU>;
+using VF = vector<F>;
+using VFF = vector<FF>;
+using VB = vector<bool>;
+using VS = vector<string>;
+using PII = pair<I, I>;
+using PIIII = pair<II, II>;
+using VPI = vector<PII>;
+using VPIIII = vector<PIIII>;
+using VVI = vector<VI>;
+using VVII = vector<VII>;
+using VVU = vector<VU>;
+using VVUU = vector<VUU>;
+using VVF = vector<VF>;
+using VVFF = vector<VFF>;
+using VVB = vector<VB>;
+using VVS = vector<VS>;
+
+// ---------- Math Functions ----------
+II gcd(II a, II b) {
+    return b == 0 ? a : gcd(b, a % b);
+}
+
+II lcm(II a, II b) {
+    return a / gcd(a, b) * b;
+}
+
+II modpow(II a, II b, II m) {
+    II res = 1;
+    a %= m;
+    while (b > 0) {
+        if (b & 1) {
+            res = res * a % m;
+        }
+        a = a * a % m;
+        b >>= 1;
+    }
+    return res;
+}
+
+II modinv(II a, II m) {
+    return modpow(a, m - 2, m);
+}
+
+II ncr(II n, II r, const VII& fact, const VII& inv_fact) {
+    if (r > n || r < 0) {
+        return 0;
+    }
+    return fact[n] * inv_fact[r] % MOD * inv_fact[n - r] % MOD;
+}
+
+// ---------- Prime Number Utilities ----------
+VII sieve(int n) {
+    VII primes;
+    VB is_prime(n + 1, true);
+    is_prime[0] = is_prime[1] = false;
+    for (int i = 2; i <= n; ++i) {
+        if (is_prime[i]) {
+            primes.push_back(i);
+            for (int j = 2 * i; j <= n; j += i) {
+                is_prime[j] = false;
+            }
+        }
+    }
+    return primes;
+}
+
+bool is_prime(II n) {
+    if (n <= 1) {
+        return false;
+    }
+    for (II i = 2; i * i <= n; ++i) {
+        if (n % i == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// ---------- Combinatorics ----------
+VII factorial(int n, II m) {
+    VII fact(n + 1);
+    fact[0] = 1;
+    for (int i = 1; i <= n; ++i) {
+        fact[i] = fact[i - 1] * i % m;
+    }
+    return fact;
+}
+
+VII inverse_factorial(int n, II m) {
+    VII inv_fact(n + 1);
+    VII fact = factorial(n, m);
+    inv_fact[n] = modinv(fact[n], m);
+    for (int i = n - 1; i >= 0; --i) {
+        inv_fact[i] = inv_fact[i + 1] * (i + 1) % m;
+    }
+    return inv_fact;
+}
+
+// ---------- Disjoint Set Union (DSU) ----------
+struct DSU {
+    VI parent;
+    VI rank;
+    
+    DSU(int n) {
+        parent.resize(n);
+        iota(parent.begin(), parent.end(), 0);
+        rank.assign(n, 1);
+    }
+    
+    int find(int x) {
+        if (parent[x] != x) {
+            parent[x] = find(parent[x]);
+        }
+        return parent[x];
+    }
+    
+    void unite(int x, int y) {
+        int x_root = find(x);
+        int y_root = find(y);
+        if (x_root != y_root) {
+            if (rank[x_root] < rank[y_root]) {
+                parent[x_root] = y_root;
+            } else {
+                parent[y_root] = x_root;
+                if (rank[x_root] == rank[y_root]) {
+                    rank[x_root]++;
+                }
+            }
+        }
+    }
+};
+
+// ---------- Fenwick Tree (BIT) ----------
+struct FenwickTree {
+    VII bit;
+    int n;
+    
+    FenwickTree(int size) : n(size) {
+        bit.assign(n + 1, 0);
+    }
+    
+    void update(int idx, II delta) {
+        while (idx <= n) {
+            bit[idx] += delta;
+            idx += idx & -idx;
+        }
+    }
+    
+    II query(int idx) {
+        II res = 0;
+        while (idx > 0) {
+            res += bit[idx];
+            idx -= idx & -idx;
+        }
+        return res;
+    }
+    
+    II range_query(int l, int r) {
+        return query(r) - query(l - 1);
+    }
+};
+
+// ---------- Segment Tree ----------
+struct SegmentTree {
+    VII tree;
+    int size;
+    
+    SegmentTree(int n) {
+        size = 1;
+        while (size < n) {
+            size <<= 1;
+        }
+        tree.assign(2 * size, 0);
+    }
+    
+    void build(const VII& a, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            if (lx < (int)a.size()) {
+                tree[x] = a[lx];
+            }
+            return;
+        }
+        int m = (lx + rx) / 2;
+        build(a, 2 * x + 1, lx, m);
+        build(a, 2 * x + 2, m, rx);
+        tree[x] = tree[2 * x + 1] + tree[2 * x + 2];
+    }
+    
+    void build_from(const VII& a) {
+        build(a, 0, 0, size);
+    }
+    
+    void update(int idx, II val, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            tree[x] = val;
+            return;
+        }
+        int m = (lx + rx) / 2;
+        if (idx < m) {
+            update(idx, val, 2 * x + 1, lx, m);
+        } else {
+            update(idx, val, 2 * x + 2, m, rx);
+        }
+        tree[x] = tree[2 * x + 1] + tree[2 * x + 2];
+    }
+    
+    void update_at(int idx, II val) {
+        update(idx, val, 0, 0, size);
+    }
+    
+    II query(int l, int r, int x, int lx, int rx) {
+        if (lx >= r || rx <= l) {
+            return 0;
+        }
+        if (lx >= l && rx <= r) {
+            return tree[x];
+        }
+        int m = (lx + rx) / 2;
+        return query(l, r, 2 * x + 1, lx, m) + query(l, r, 2 * x + 2, m, rx);
+    }
+    
+    II range_query(int l, int r) {
+        return query(l, r, 0, 0, size);
+    }
+};
+
+// ---------- Heavy-Light Decomposition ----------
+struct HLD {
+    int n;
+    int timer;
+    VI parent;
+    VI depth;
+    VI heavy;
+    VI head;
+    VI pos;
+    VVI adj;
+    
+    HLD(int size) : n(size), timer(0) {
+        parent.assign(n, -1);
+        depth.assign(n, 0);
+        heavy.assign(n, -1);
+        head.resize(n);
+        pos.resize(n);
+        adj.resize(n);
+    }
+    
+    void add_edge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    
+    int dfs(int v) {
+        int size = 1;
+        int max_c_size = 0;
+        for (int c : adj[v]) {
+            if (c != parent[v]) {
+                parent[c] = v;
+                depth[c] = depth[v] + 1;
+                int c_size = dfs(c);
+                size += c_size;
+                if (c_size > max_c_size) {
+                    max_c_size = c_size;
+                    heavy[v] = c;
+                }
+            }
+        }
+        return size;
+    }
+    
+    void decompose(int v, int h) {
+        head[v] = h;
+        pos[v] = timer++;
+        if (heavy[v] != -1) {
+            decompose(heavy[v], h);
+        }
+        for (int c : adj[v]) {
+            if (c != parent[v] && c != heavy[v]) {
+                decompose(c, c);
+            }
+        }
+    }
+    
+    void build(int root) {
+        dfs(root);
+        decompose(root, root);
+    }
+};
+
+// ---------- String Algorithms ----------
+VI prefix_function(const string& s) {
+    int n = s.size();
+    VI pi(n);
+    for (int i = 1; i < n; ++i) {
+        int j = pi[i - 1];
+        while (j > 0 && s[i] != s[j]) {
+            j = pi[j - 1];
+        }
+        if (s[i] == s[j]) {
+            ++j;
+        }
+        pi[i] = j;
+    }
+    return pi;
+}
+
+VI z_function(const string& s) {
+    int n = s.size();
+    VI z(n);
+    for (int i = 1, l = 0, r = 0; i < n; ++i) {
+        if (i <= r) {
+            z[i] = min(r - i + 1, z[i - l]);
+        }
+        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) {
+            ++z[i];
+        }
+        if (i + z[i] - 1 > r) {
+            l = i;
+            r = i + z[i] - 1;
+        }
+    }
+    return z;
+}
+
+// ---------- Graph Algorithms ----------
+VVI floyd_warshall(VVI dist) {
+    int n = dist.size();
+    for (int k = 0; k < n; ++k) {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);
+            }
+        }
+    }
+    return dist;
+}
+
+VI topological_sort(const VVI& adj) {
+    int n = adj.size();
+    VI in_degree(n);
+    for (const auto& edges : adj) {
+        for (int v : edges) {
+            in_degree[v]++;
+        }
+    }
+    queue<int> q;
+    for (int i = 0; i < n; ++i) {
+        if (in_degree[i] == 0) {
+            q.push(i);
+        }
+    }
+    VI order;
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        order.push_back(u);
+        for (int v : adj[u]) {
+            if (--in_degree[v] == 0) {
+                q.push(v);
+            }
+        }
+    }
+    return order.size() == n ? order : VI();
+}
+
+// ---------- Binary Search Utilities ----------
+template<typename T>
+int lower_bound(const vector<T>& v, const T& x) {
+    return distance(v.begin(), lower_bound(v.begin(), v.end(), x));
+}
+
+template<typename T>
+int upper_bound(const vector<T>& v, const T& x) {
+    return distance(v.begin(), upper_bound(v.begin(), v.end(), x));
+}
+
+bool is_square(II x) {
+    II s = sqrt(x);
+    return s * s == x || (s + 1) * (s + 1) == x;
+}
+
+// ---------- I/O Utilities ----------
+template<typename T>
+T read() {
+    T x;
+    cin >> x;
+    return x;
+}
+
+template<typename T>
+vector<T> read_vector() {
+    int n;
+    cin >> n;
+    vector<T> v(n);
+    for (T& x : v) {
+        cin >> x;
+    }
+    return v;
+}
+
+template<typename T>
+void print_vector(const vector<T>& v, bool newline = true) {
+    for (const T& x : v) {
+        cout << x << " ";
+    }
+    if (newline) {
+        cout << endl;
+    }
+}
+
+// ---------- Main Function ----------
+
+#include <iostream>
+using namespace std;
+
+int main() {
+    int N;
+    cin >> N;
+    int sum = 0;
+    for (int i = 0; i < N; ++i) {
+        int x;
+        cin >> x;
+        if (i % 2 == 0) sum += x; // 0-based index: 0, 2, 4... are odd positions (1-based)
+    }
+    cout << sum << endl;
+    return 0;
+}
+
+
+
+
